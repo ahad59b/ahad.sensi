@@ -2,13 +2,11 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ahad Sensi</title>
 
 <style>
-*{
-  box-sizing:border-box;
-}
+*{box-sizing:border-box}
 
 body{
   margin:0;
@@ -26,7 +24,7 @@ body{
 .header{
   padding:12px 0 20px;
   font-size:25px;
-  font-weight:bold;
+  font-weight:800;
 }
 
 .card{
@@ -34,12 +32,11 @@ body{
   border:1px solid #26344b;
   border-radius:20px;
   padding:22px;
-  margin-top:15px;
 }
 
 .logo{
-  width:70px;
-  height:70px;
+  width:72px;
+  height:72px;
   border-radius:18px;
   background:#243452;
   display:flex;
@@ -72,24 +69,32 @@ button{
   border-radius:12px;
   padding:15px;
   background:#2979ff;
-  color:white;
+  color:#fff;
   font-size:16px;
   font-weight:bold;
-  cursor:pointer;
 }
 
-button:active{
-  transform:scale(.98);
-}
-
-.info{
+.status{
   margin-top:15px;
   padding:13px;
+  border-radius:12px;
   background:#182338;
-  border-radius:11px;
-  color:#9eabc0;
-  font-size:12px;
-  line-height:1.5;
+  color:#b9c5d8;
+  font-size:13px;
+}
+
+.success{
+  background:#123d27;
+  color:#83ffb1;
+}
+
+.error{
+  background:#451d1d;
+  color:#ffb1a8;
+}
+
+.hidden{
+  display:none;
 }
 </style>
 </head>
@@ -116,14 +121,11 @@ button:active{
       ৳10
     </div>
 
-    <button onclick="payNow()">
+    <button id="payBtn" onclick="payNow()">
       Pay ৳10 with RupantorPay
     </button>
 
-    <div class="info">
-      You will be redirected to the official
-      RupantorPay payment page.
-    </div>
+    <div id="status" class="status hidden"></div>
 
   </div>
 
@@ -131,28 +133,108 @@ button:active{
 
 <script>
 
-/*
-==================================================
-        RUPANTORPAY CONFIG
-==================================================
-*/
-
-const RUPANTORPAY_API_KEY =
-"cRlKsjIuTzDQcsCZITAXqPSTmhTOIfuJlQk23M1uvwc3Qu5g5k";
+/* ==============================
+   RUPANTORPAY PAYMENT LINK
+   ============================== */
 
 const RUPANTORPAY_PAYMENT_LINK =
 "https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5NSIsImN1c3RvbWVyX2Ftb3VudCI6IjEwIn0";
 
 
+/* ==============================
+   APK DESTINATION
+   ============================== */
+
+const APK_URL =
+"https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi+v1.apk/file";
+
+
 function payNow(){
 
-    /*
-      Opens the REAL RupantorPay payment page.
-    */
+    document.getElementById("payBtn").disabled = true;
 
     window.location.href =
         RUPANTORPAY_PAYMENT_LINK;
 }
+
+
+/* ==============================
+   RUPANTORPAY RETURN CHECK
+   ============================== */
+
+function checkPaymentReturn(){
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const transactionId =
+        params.get("transactionId");
+
+    const status =
+        (params.get("status") || "")
+        .toUpperCase();
+
+    const amount =
+        params.get("paymentAmount");
+
+    const statusBox =
+        document.getElementById("status");
+
+
+    /*
+      This checks the return parameters only.
+      It is NOT server-side API verification.
+    */
+
+    if(
+        transactionId &&
+        status === "COMPLETED" &&
+        amount === "10"
+    ){
+
+        statusBox.className =
+            "status success";
+
+        statusBox.textContent =
+            "Payment completed. Download খুলছে...";
+
+        statusBox.classList.remove(
+            "hidden"
+        );
+
+
+        setTimeout(function(){
+
+            window.location.href =
+                APK_URL;
+
+        },700);
+
+    }
+
+    else if(
+        transactionId &&
+        status
+    ){
+
+        statusBox.className =
+            "status error";
+
+        statusBox.textContent =
+            "Payment verified হয়নি। Status: " +
+            status;
+
+        statusBox.classList.remove(
+            "hidden"
+        );
+    }
+}
+
+
+/* Check when RupantorPay returns */
+checkPaymentReturn();
 
 </script>
 
