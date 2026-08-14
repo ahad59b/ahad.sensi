@@ -33,6 +33,7 @@ body{
   border-radius:20px;
   padding:22px;
   margin-top:15px;
+  text-align:center;
 }
 
 .logo{
@@ -45,17 +46,13 @@ body{
   justify-content:center;
   font-size:32px;
   font-weight:bold;
-  margin-bottom:18px;
-}
-
-h1{
-  margin:0 0 8px;
-  font-size:28px;
+  margin:0 auto 18px;
 }
 
 .description{
   color:#9eabc0;
   font-size:14px;
+  line-height:1.6;
 }
 
 .price{
@@ -64,7 +61,7 @@ h1{
   margin:20px 0;
 }
 
-button,.download-btn{
+button,.download{
   display:block;
   width:100%;
   border:0;
@@ -75,12 +72,11 @@ button,.download-btn{
   font-size:16px;
   font-weight:bold;
   cursor:pointer;
-  text-align:center;
   text-decoration:none;
 }
 
-button:disabled{
-  opacity:.6;
+button:disabled {
+  background:#555;
   cursor:not-allowed;
 }
 
@@ -91,15 +87,10 @@ button:disabled{
   border-radius:11px;
   color:#9eabc0;
   font-size:12px;
-  line-height:1.5;
 }
 
-.message{
-  margin-top:15px;
-  padding:13px;
-  border-radius:11px;
-  display:none;
-  font-size:13px;
+.success{
+  color:#00c853;
 }
 </style>
 </head>
@@ -108,239 +99,136 @@ button:disabled{
 
 <div class="container">
 
-  <div class="header">
-    Ahad Sensi
-  </div>
+<div class="header">
+Ahad Sensi
+</div>
 
-  <div class="card" id="mainCard">
+<div class="card" id="card">
 
-    <div class="logo">A</div>
+<div class="logo">A</div>
 
-    <h1>Ahad Sensi</h1>
+<h1>Ahad Sensi</h1>
 
-    <div class="description">
-      Premium APK
-    </div>
+<div class="description">
+Premium APK
+</div>
 
-    <div class="price">
-      ৳10
-    </div>
+<div class="price">
+৳15
+</div>
 
-    <button id="payButton" onclick="payNow()">
-      Pay ৳10 with RupantorPay
-    </button>
+<button id="payBtn" onclick="payNow()">
+Pay ৳15 with RupantorPay
+</button>
 
-    <div class="info">
-      পেমেন্ট সম্পন্ন করার পর RupantorPay থেকে
-      payment verify করা হবে।
-    </div>
+<div class="info">
+Payment করার পর সফল হলে automatic download হবে।
+</div>
 
-    <div id="message" class="message"></div>
-
-  </div>
+</div>
 
 </div>
 
 <script>
+// ==================== [ API সেটিং ] ====================
+// ১. আপনার API Key এখানে বসাবেন
+const API_KEY = "hf6Xp7wd7P1nuYmXDLDkHJCPBMusZRGoNCLVzrfE3yCtSyPpL4"; 
 
-/*
-==================================================
-              AHAD SENSI CONFIG
-==================================================
+// ২. ডাউনলোডের মিডিয়া ফায়ার লিঙ্ক
+const APK_LINK = "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
 
-IMPORTANT:
-এখানে কোনো RupantorPay API key রাখবে না।
+// ৩. RupantorPay API এ্যান্ডপয়েন্ট URL
+const API_CREATE_URL = "https://rupantorpay.com/api/create-payment";
+// =========================================================
 
-Cloudflare Worker তৈরি করার পর শুধু নিচের
-BACKEND_URL পরিবর্তন করবে।
-*/
+async function payNow() {
+  const payBtn = document.getElementById("payBtn");
+  payBtn.disabled = true;
+  payBtn.innerText = "Processing...";
 
-// RupantorPay payment link
-const PAYMENT_LINK =
-"https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5OSIsImN1c3RvbWVyX2Ftb3VudCI6IjE1In0";
-
-// পরে Cloudflare Worker URL এখানে বসাবি
-const BACKEND_URL =
-"https://ahad-payment-api.abdulahad121213131414.workers.dev/";
-
-// APK download link
-const APK_DOWNLOAD_LINK =
-"https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
-
-
-function payNow(){
-
-  /*
-    Payment verification backend ছাড়া
-    সরাসরি APK unlock করা হবে না।
-  */
-
-  if(BACKEND_URL.includes("YOUR-WORKER-NAME")){
-
-    showMessage(
-      "Payment system এখনো setup করা হয়নি। আগে backend setup করতে হবে।",
-      "error"
-    );
-
-    return;
-  }
-
-  window.location.href = PAYMENT_LINK;
-}
-
-
-/*
-==================================================
-          PAYMENT VERIFICATION
-==================================================
-*/
-
-async function verifyPayment(transactionId){
-
-  try{
-
-    const response = await fetch(
-      BACKEND_URL + "/verify?transaction_id=" +
-      encodeURIComponent(transactionId)
-    );
-
-    if(!response.ok){
-      throw new Error("Verification failed");
-    }
+  try {
+    // API দিয়ে পেমেন্ট রিকোয়েস্ট তৈরি করা হচ্ছে
+    const response = await fetch(API_CREATE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}` // API Key হেডারে পাঠানো হচ্ছে
+      },
+      body: JSON.stringify({
+        apiKey: API_KEY, // অনেক গেটওয়ে Body-তেও API Key চায়
+        amount: 15,
+        currency: "BDT",
+        success_url: window.location.origin + window.location.pathname + "?status=completed",
+        cancel_url: window.location.origin + window.location.pathname + "?status=cancelled"
+      })
+    });
 
     const data = await response.json();
 
-    /*
-      Backend শুধুমাত্র verified payment হলে
-      verified:true পাঠাবে।
-    */
-
-    if(data.verified === true){
-
-      showSuccess();
-
-    }else{
-
-      showMessage(
-        "Payment verify হয়নি। Download করা যাবে না।",
-        "error"
-      );
-
+    // API থেকে পেমেন্ট ইউআরএল (Payment URL) আসলে রিডাইরেক্ট করবে
+    if (data && (data.payment_url || data.url)) {
+      window.location.href = data.payment_url || data.url;
+    } else {
+      alert("পেমেন্ট লিঙ্ক তৈরি করা সম্ভব হয়নি! API Key চেক করুন।");
+      payBtn.disabled = false;
+      payBtn.innerText = "Pay ৳15 with RupantorPay";
     }
 
-  }catch(error){
-
-    console.error(error);
-
-    showMessage(
-      "Payment verification করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা কর।",
-      "error"
-    );
+  } catch (error) {
+    console.error("API Error:", error);
+    alert("API সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে!");
+    payBtn.disabled = false;
+    payBtn.innerText = "Pay ৳15 with RupantorPay";
   }
 }
 
+// পেমেন্ট শেষে ইউজার পেজে ফিরে এলে চেক করা
+window.addEventListener("DOMContentLoaded", function() {
+  const params = new URLSearchParams(window.location.search);
+  const transactionId = params.get("transactionId") || params.get("transaction_id") || params.get("trx_id");
+  const status = (params.get("status") || "").toLowerCase();
 
-/*
-==================================================
-              SUCCESS SCREEN
-==================================================
-*/
+  // পেমেন্ট সফল হলে
+  if (status === "completed" || status === "success") {
+    document.getElementById("card").innerHTML = `
+      <div class="logo" style="background:#00c853">✓</div>
+      <h1 class="success">Payment Successful!</h1>
+      <div class="description">
+        ${transactionId ? `Transaction ID: <br><b>${escapeHTML(transactionId)}</b><br><br>` : ''}
+        Payment completed.<br>
+        ২ সেকেন্ড পর Download শুরু হচ্ছে...
+      </div>
+    `;
 
-function showSuccess(){
-
-  const card = document.getElementById("mainCard");
-
-  card.innerHTML = `
-
-    <div class="logo"
-         style="background:#00c853;">
-      ✓
-    </div>
-
-    <h1 style="color:#00c853;">
-      Payment Successful!
-    </h1>
-
-    <div class="description"
-         style="margin-bottom:20px;">
-      আপনার payment successfully verified হয়েছে।
-    </div>
-
-    <a
-      href="${APK_DOWNLOAD_LINK}"
-      class="download-btn"
-      style="background:#00c853;">
-      Download APK
-    </a>
-
-  `;
-}
-
-
-/*
-==================================================
-                MESSAGE
-==================================================
-*/
-
-function showMessage(text,type){
-
-  const message =
-    document.getElementById("message");
-
-  message.style.display = "block";
-  message.textContent = text;
-
-  if(type === "error"){
-    message.style.background = "#3b1820";
-    message.style.color = "#ff8a9b";
-  }else{
-    message.style.background = "#173b29";
-    message.style.color = "#7dffad";
+    setTimeout(function() {
+      window.location.href = APK_LINK;
+    }, 2000);
+  } 
+  // পেমেন্ট ব্যর্থ বা ক্যানসেল হলে
+  else if (status === "failed" || status === "cancelled") {
+    document.getElementById("card").innerHTML = `
+      <div class="logo" style="background:#ff3b30">✕</div>
+      <h1 style="color:#ff3b30">Payment Failed!</h1>
+      <div class="description">
+        আপনার পেমেন্টটি সম্পন্ন হয়নি। দয়া করে আবার চেষ্টা করুন।
+      </div>
+      <br>
+      <button onclick="window.location.href=window.location.pathname">আবার চেষ্টা করুন</button>
+    `;
   }
-}
-
-
-/*
-==================================================
-        RETURN FROM PAYMENT PAGE
-==================================================
-*/
-
-window.addEventListener("DOMContentLoaded",()=>{
-
-  const params =
-    new URLSearchParams(window.location.search);
-
-  /*
-    RupantorPay success URL থেকে transactionId
-    পাওয়া গেলে backend-এ verification পাঠানো হবে।
-  */
-
-  const transactionId =
-    params.get("transactionId") ||
-    params.get("transaction_id");
-
-  /*
-    IMPORTANT:
-    শুধু status=success দেখে payment successful
-    ধরা হচ্ছে না।
-  */
-
-  if(transactionId){
-
-    document.getElementById("payButton").disabled = true;
-
-    showMessage(
-      "Payment verify করা হচ্ছে...",
-      "success"
-    );
-
-    verifyPayment(transactionId);
-  }
-
 });
 
+function escapeHTML(text) {
+  return text.replace(/[&<>"']/g, function(char) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[char];
+  });
+}
 </script>
 
 </body>
