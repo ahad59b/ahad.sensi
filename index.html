@@ -2,101 +2,39 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ahad Sensi</title>
 
 <style>
 *{box-sizing:border-box}
-
 body{
-  margin:0;
-  background:#070b12;
-  color:#fff;
-  font-family:Arial,sans-serif;
+margin:0;background:#070b12;color:#fff;
+font-family:Arial,sans-serif
 }
-
-.container{
-  max-width:600px;
-  margin:auto;
-  padding:18px;
-}
-
-.header{
-  padding:12px 0 20px;
-  font-size:25px;
-  font-weight:bold;
-}
-
+.container{max-width:600px;margin:auto;padding:18px}
+.header{padding:12px 0 20px;font-size:25px;font-weight:bold}
 .card{
-  background:#101827;
-  border:1px solid #26344b;
-  border-radius:20px;
-  padding:22px;
-  margin-top:15px;
-  text-align:center;
+background:#101827;border:1px solid #26344b;
+border-radius:20px;padding:22px;margin-top:15px;
+text-align:center
 }
-
 .logo{
-  width:70px;
-  height:70px;
-  border-radius:18px;
-  background:#243452;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:32px;
-  font-weight:bold;
-  margin:0 auto 18px;
+width:70px;height:70px;border-radius:18px;
+background:#243452;display:flex;
+align-items:center;justify-content:center;
+font-size:32px;font-weight:bold;
+margin:auto auto 18px
 }
-
-.description{
-  color:#9eabc0;
-  font-size:14px;
-  line-height:1.6;
-}
-
-.price{
-  font-size:25px;
-  font-weight:bold;
-  margin:20px 0;
-}
-
+.description{color:#9eabc0;font-size:14px;line-height:1.6}
+.price{font-size:25px;font-weight:bold;margin:20px 0}
 button{
-  display:block;
-  width:100%;
-  border:0;
-  border-radius:12px;
-  padding:15px;
-  background:#2979ff;
-  color:white;
-  font-size:16px;
-  font-weight:bold;
-  cursor:pointer;
+display:block;width:100%;border:0;border-radius:12px;
+padding:15px;background:#2979ff;color:white;
+font-size:16px;font-weight:bold;cursor:pointer
 }
-
-button:disabled{
-  opacity:.6;
-}
-
 .info{
-  margin-top:15px;
-  padding:13px;
-  background:#182338;
-  border-radius:11px;
-  color:#9eabc0;
-  font-size:12px;
-}
-
-.success{
-  color:#00c853;
-}
-
-.error{
-  color:#ff5252;
-}
-
-.loading{
-  color:#ffd600;
+margin-top:15px;padding:13px;background:#182338;
+border-radius:11px;color:#9eabc0;font-size:12px
 }
 </style>
 </head>
@@ -105,362 +43,42 @@ button:disabled{
 
 <div class="container">
 
-  <div class="header">
-    Ahad Sensi
-  </div>
+<div class="header">Ahad Sensi</div>
 
-  <div class="card" id="card">
+<div class="card">
 
-    <div class="logo">A</div>
+<div class="logo">A</div>
 
-    <h1>Ahad Sensi</h1>
+<h1>Ahad Sensi v1</h1>
 
-    <div class="description">
-      Premium APK
-    </div>
+<div class="description">
+Premium APK
+</div>
 
-    <div class="price">
-      ৳15
-    </div>
+<div class="price">৳15</div>
 
-    <button id="payButton" onclick="startPayment()">
-      Pay ৳15 with RupantorPay
-    </button>
+<button onclick="payNow()">
+Pay ৳15 with RupantorPay
+</button>
 
-    <div class="info">
-      Payment করার পর automatically verify হবে।
-    </div>
+<div class="info">
+Payment করার পর automatically verify হবে।
+</div>
 
-  </div>
-
+</div>
 </div>
 
 <script>
 
-/* ================================
-   PHP URL
-================================ */
-
-const CHECKOUT_API =
-  "https://sensi.xo.je/checkout.php";
-
-const VERIFY_API =
-  "https://sensi.xo.je/verify.php";
-
-
-/* ================================
-   APK DOWNLOAD LINK
-================================ */
-
-const APK_LINK =
-  "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
-
-
-/* ================================
-   PAYMENT START
-================================ */
-
-async function startPayment(){
-
-  const button =
-    document.getElementById("payButton");
-
-  button.disabled = true;
-
-  button.innerText =
-    "Creating Payment...";
-
-  try{
-
-    const response =
-      await fetch(
-        CHECKOUT_API + "?t=" + Date.now(),
-        {
-          method:"GET",
-          cache:"no-store"
-        }
-      );
-
-    const data =
-      await response.json();
-
-    console.log("Checkout:", data);
-
-    if(
-      data.ok === true &&
-      data.payment_url
-    ){
-
-      window.location.href =
-        data.payment_url;
-
-      return;
-    }
-
-    throw new Error(
-      data.message ||
-      "Payment link তৈরি হয়নি"
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    alert(
-      "Payment শুরু করা যায়নি। আবার চেষ্টা করুন।"
-    );
-
-    button.disabled = false;
-
-    button.innerText =
-      "Pay ৳15 with RupantorPay";
-  }
-
-}
-
-
-/* ================================
-   VERIFY PAYMENT
-================================ */
-
-async function verifyPayment(transactionId){
-
-  const card =
-    document.getElementById("card");
-
-  card.innerHTML = `
-
-    <div class="logo loading">
-      ...
-    </div>
-
-    <h1 class="loading">
-      Checking Payment...
-    </h1>
-
-    <div class="description">
-      Payment verification চলছে...
-      <br><br>
-      একটু অপেক্ষা করুন।
-    </div>
-
-  `;
-
-  try{
-
-    const url =
-      VERIFY_API +
-      "?transaction_id=" +
-      encodeURIComponent(transactionId) +
-      "&t=" +
-      Date.now();
-
-    const response =
-      await fetch(
-        url,
-        {
-          method:"GET",
-          cache:"no-store"
-        }
-      );
-
-    const data =
-      await response.json();
-
-    console.log("Verify:", data);
-
-
-    /* ================================
-       ONLY VERIFIED PAYMENT
-    ================================= */
-
-    if(
-      data.ok === true &&
-      data.verified === true &&
-      String(data.status).toUpperCase() === "COMPLETED"
-    ){
-
-      card.innerHTML = `
-
-        <div
-          class="logo"
-          style="background:#00c853"
-        >
-          ✓
-        </div>
-
-        <h1 class="success">
-          Payment Successful!
-        </h1>
-
-        <div class="description">
-
-          Payment successfully verified.
-
-          <br><br>
-
-          Transaction ID:
-
-          <br>
-
-          <b>
-            ${escapeHTML(transactionId)}
-          </b>
-
-          <br><br>
-
-          ২ সেকেন্ড পর Download শুরু হবে...
-
-        </div>
-
-      `;
-
-      setTimeout(function(){
-
-        window.location.href =
-          APK_LINK;
-
-      },2000);
-
-      return;
-    }
-
-
-    /* ================================
-       NOT VERIFIED
-    ================================= */
-
-    card.innerHTML = `
-
-      <div
-        class="logo"
-        style="background:#ff3b30"
-      >
-        ✕
-      </div>
-
-      <h1 class="error">
-        Payment Not Verified
-      </h1>
-
-      <div class="description">
-
-        Payment এখনো verify হয়নি।
-
-        <br><br>
-
-        Transaction ID:
-
-        <br>
-
-        <b>
-          ${escapeHTML(transactionId)}
-        </b>
-
-      </div>
-
-      <br>
-
-      <button onclick="location.href=location.pathname">
-        আবার চেষ্টা করুন
-      </button>
-
-    `;
-
-  }catch(error){
-
-    console.error(error);
-
-    card.innerHTML = `
-
-      <div
-        class="logo"
-        style="background:#ff3b30"
-      >
-        !
-      </div>
-
-      <h1 class="error">
-        Verification Error
-      </h1>
-
-      <div class="description">
-        Verification server-এর সাথে
-        যোগাযোগ করা যায়নি।
-      </div>
-
-      <br>
-
-      <button onclick="location.reload()">
-        আবার চেষ্টা করুন
-      </button>
-
-    `;
-
-  }
-
-}
-
-
-/* ================================
-   PAYMENT CALLBACK
-================================ */
-
-window.addEventListener(
-  "DOMContentLoaded",
-  function(){
-
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
-
-
-    const transactionId =
-      params.get("transactionId") ||
-      params.get("transaction_id") ||
-      params.get("trx_id");
-
-
-    if(transactionId){
-
-      /*
-       * Payment callback পেয়েছি।
-       * এখন server-side verification হবে।
-       */
-
-      verifyPayment(transactionId);
-
-    }
-
-  }
-);
-
-
-/* ================================
-   HTML ESCAPE
-================================ */
-
-function escapeHTML(text){
-
-  return String(text).replace(
-    /[&<>"']/g,
-    function(char){
-
-      return {
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        '"':"&quot;",
-        "'":"&#039;"
-      }[char];
-
-    }
-  );
+function payNow(){
+
+    // PHP নিজেই RupantorPay payment page-এ redirect করবে
+    window.location.href =
+    "https://sensi.xo.je/checkout.php";
 
 }
 
 </script>
 
 </body>
-  </html>
+</html>
