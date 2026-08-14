@@ -2,11 +2,13 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ahad Sensi</title>
 
 <style>
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
@@ -24,7 +26,7 @@ body{
 .header{
   padding:12px 0 20px;
   font-size:25px;
-  font-weight:800;
+  font-weight:bold;
 }
 
 .card{
@@ -32,11 +34,12 @@ body{
   border:1px solid #26344b;
   border-radius:20px;
   padding:22px;
+  margin-top:15px;
 }
 
 .logo{
-  width:72px;
-  height:72px;
+  width:70px;
+  height:70px;
   border-radius:18px;
   background:#243452;
   display:flex;
@@ -63,38 +66,33 @@ h1{
   margin:20px 0;
 }
 
-button{
+button, .download-btn{
+  display: block;
   width:100%;
   border:0;
   border-radius:12px;
   padding:15px;
   background:#2979ff;
-  color:#fff;
+  color:white;
   font-size:16px;
   font-weight:bold;
+  cursor:pointer;
+  text-align: center;
+  text-decoration: none;
 }
 
-.status{
+button:active, .download-btn:active{
+  transform:scale(.98);
+}
+
+.info{
   margin-top:15px;
   padding:13px;
-  border-radius:12px;
   background:#182338;
-  color:#b9c5d8;
-  font-size:13px;
-}
-
-.success{
-  background:#123d27;
-  color:#83ffb1;
-}
-
-.error{
-  background:#451d1d;
-  color:#ffb1a8;
-}
-
-.hidden{
-  display:none;
+  border-radius:11px;
+  color:#9eabc0;
+  font-size:12px;
+  line-height:1.5;
 }
 </style>
 </head>
@@ -107,7 +105,7 @@ button{
     Ahad Sensi
   </div>
 
-  <div class="card">
+  <div class="card" id="mainCard">
 
     <div class="logo">A</div>
 
@@ -121,11 +119,14 @@ button{
       ৳10
     </div>
 
-    <button id="payBtn" onclick="payNow()">
+    <button onclick="payNow()">
       Pay ৳10 with RupantorPay
     </button>
 
-    <div id="status" class="status hidden"></div>
+    <div class="info">
+      You will be redirected to the official
+      RupantorPay payment page.
+    </div>
 
   </div>
 
@@ -133,108 +134,52 @@ button{
 
 <script>
 
-/* ==============================
-   RUPANTORPAY PAYMENT LINK
-   ============================== */
+/*
+==================================================
+        RUPANTORPAY & DOWNLOAD CONFIG
+==================================================
+*/
 
-const RUPANTORPAY_PAYMENT_LINK =
-"https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5NSIsImN1c3RvbWVyX2Ftb3VudCI6IjEwIn0";
+const RUPANTORPAY_API_KEY = "FOB9TeF0OQDbT5SB7PqU39ULpN3xbgAPzFsw9AVg7O2eDu1ljt";
+
+const RUPANTORPAY_PAYMENT_LINK = "https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5OSIsImN1c3RvbWVyX2Ftb3VudCI6IjE1In0";
+
+const APK_DOWNLOAD_LINK = "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
 
 
-/* ==============================
-   APK DESTINATION
-   ============================== */
+// পেমেন্ট শেষ করে ইউজার ফিরে আসলে অটো চেক করবে
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
 
-const APK_URL =
-"https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi+v1.apk/file";
+    // পেমেন্ট সফল হলে (URL-এ status=success বা sp_code=200 থাকলে)
+    if (status === 'success' || urlParams.get('sp_code') === '200') {
+        const card = document.getElementById('mainCard');
+        card.innerHTML = `
+            <div class="logo" style="background:#00c853;">✓</div>
+            <h1 style="color:#00c853;">Payment Successful!</h1>
+            <div class="description" style="margin-bottom: 20px;">
+                আপনার পেমেন্ট সফল হয়েছে। অটোমেটিক ডাউনলোড শুরু হচ্ছে...
+            </div>
+            <a href="${APK_DOWNLOAD_LINK}" class="download-btn" style="background:#00c853;">
+                Download APK Now
+            </a>
+        `;
+
+        // ২ সেকেন্ডের মধ্যে অটোমেটিক মিডিয়াফায়ার লিংকে নিয়ে যাবে
+        setTimeout(() => {
+            window.location.href = APK_DOWNLOAD_LINK;
+        }, 2000);
+    }
+});
 
 
 function payNow(){
-
-    document.getElementById("payBtn").disabled = true;
-
-    window.location.href =
-        RUPANTORPAY_PAYMENT_LINK;
-}
-
-
-/* ==============================
-   RUPANTORPAY RETURN CHECK
-   ============================== */
-
-function checkPaymentReturn(){
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    const transactionId =
-        params.get("transactionId");
-
-    const status =
-        (params.get("status") || "")
-        .toUpperCase();
-
-    const amount =
-        params.get("paymentAmount");
-
-    const statusBox =
-        document.getElementById("status");
-
-
     /*
-      This checks the return parameters only.
-      It is NOT server-side API verification.
+      Opens the RupantorPay payment page.
     */
-
-    if(
-        transactionId &&
-        status === "COMPLETED" &&
-        amount === "10"
-    ){
-
-        statusBox.className =
-            "status success";
-
-        statusBox.textContent =
-            "Payment completed. Download খুলছে...";
-
-        statusBox.classList.remove(
-            "hidden"
-        );
-
-
-        setTimeout(function(){
-
-            window.location.href =
-                APK_URL;
-
-        },700);
-
-    }
-
-    else if(
-        transactionId &&
-        status
-    ){
-
-        statusBox.className =
-            "status error";
-
-        statusBox.textContent =
-            "Payment verified হয়নি। Status: " +
-            status;
-
-        statusBox.classList.remove(
-            "hidden"
-        );
-    }
+    window.location.href = RUPANTORPAY_PAYMENT_LINK;
 }
-
-
-/* Check when RupantorPay returns */
-checkPaymentReturn();
 
 </script>
 
