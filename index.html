@@ -75,11 +75,6 @@ button,.download{
   text-decoration:none;
 }
 
-button:disabled {
-  background:#555;
-  cursor:not-allowed;
-}
-
 .info{
   margin-top:15px;
   padding:13px;
@@ -117,7 +112,7 @@ Premium APK
 ৳15
 </div>
 
-<button id="payBtn" onclick="payNow()">
+<button onclick="payNow()">
 Pay ৳15 with RupantorPay
 </button>
 
@@ -130,81 +125,42 @@ Payment করার পর সফল হলে automatic download হবে।
 </div>
 
 <script>
-// ==================== [ API সেটিং ] ====================
-// ১. আপনার API Key এখানে বসাবেন
-const API_KEY = "hf6Xp7wd7P1nuYmXDLDkHJCPBMusZRGoNCLVzrfE3yCtSyPpL4"; 
+// ১. রুপান্তর পে-এর পেমেন্ট লিঙ্ক
+const PAYMENT_LINK = "https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5OSIsImN1c3RvbWVyX2Ftb3VudCI6IjE1In0";
 
 // ২. ডাউনলোডের মিডিয়া ফায়ার লিঙ্ক
 const APK_LINK = "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
 
-// ৩. RupantorPay API এ্যান্ডপয়েন্ট URL
-const API_CREATE_URL = "https://rupantorpay.com/api/create-payment";
-// =========================================================
-
-async function payNow() {
-  const payBtn = document.getElementById("payBtn");
-  payBtn.disabled = true;
-  payBtn.innerText = "Processing...";
-
-  try {
-    // API দিয়ে পেমেন্ট রিকোয়েস্ট তৈরি করা হচ্ছে
-    const response = await fetch(API_CREATE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}` // API Key হেডারে পাঠানো হচ্ছে
-      },
-      body: JSON.stringify({
-        apiKey: API_KEY, // অনেক গেটওয়ে Body-তেও API Key চায়
-        amount: 15,
-        currency: "BDT",
-        success_url: window.location.origin + window.location.pathname + "?status=completed",
-        cancel_url: window.location.origin + window.location.pathname + "?status=cancelled"
-      })
-    });
-
-    const data = await response.json();
-
-    // API থেকে পেমেন্ট ইউআরএল (Payment URL) আসলে রিডাইরেক্ট করবে
-    if (data && (data.payment_url || data.url)) {
-      window.location.href = data.payment_url || data.url;
-    } else {
-      alert("পেমেন্ট লিঙ্ক তৈরি করা সম্ভব হয়নি! API Key চেক করুন।");
-      payBtn.disabled = false;
-      payBtn.innerText = "Pay ৳15 with RupantorPay";
-    }
-
-  } catch (error) {
-    console.error("API Error:", error);
-    alert("API সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে!");
-    payBtn.disabled = false;
-    payBtn.innerText = "Pay ৳15 with RupantorPay";
-  }
+// পেমেন্ট বাটনে চাপ দিলে রূপান্তর পে-তে নিয়ে যাবে
+function payNow(){
+  window.location.href = PAYMENT_LINK;
 }
 
-// পেমেন্ট শেষে ইউজার পেজে ফিরে এলে চেক করা
-window.addEventListener("DOMContentLoaded", function() {
+// RupantorPay থেকে পেমেন্ট শেষে ফেরত এলে ডাউনলোড শুরু হবে
+window.addEventListener("DOMContentLoaded", function(){
   const params = new URLSearchParams(window.location.search);
+  
   const transactionId = params.get("transactionId") || params.get("transaction_id") || params.get("trx_id");
   const status = (params.get("status") || "").toLowerCase();
 
   // পেমেন্ট সফল হলে
-  if (status === "completed" || status === "success") {
+  if (status === "completed" || status === "success" || transactionId) {
     document.getElementById("card").innerHTML = `
       <div class="logo" style="background:#00c853">✓</div>
       <h1 class="success">Payment Successful!</h1>
       <div class="description">
         ${transactionId ? `Transaction ID: <br><b>${escapeHTML(transactionId)}</b><br><br>` : ''}
-        Payment completed.<br>
+        পেমেন্ট সফল হয়েছে।<br>
         ২ সেকেন্ড পর Download শুরু হচ্ছে...
       </div>
     `;
 
-    setTimeout(function() {
+    // ২ সেকেন্ড পর মিডিয়াফায়ার লিংকে নিয়ে যাবে
+    setTimeout(function(){
       window.location.href = APK_LINK;
     }, 2000);
   } 
-  // পেমেন্ট ব্যর্থ বা ক্যানসেল হলে
+  // পেমেন্ট ক্যানসেল বা ফেইল হলে
   else if (status === "failed" || status === "cancelled") {
     document.getElementById("card").innerHTML = `
       <div class="logo" style="background:#ff3b30">✕</div>
@@ -218,14 +174,14 @@ window.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-function escapeHTML(text) {
-  return text.replace(/[&<>"']/g, function(char) {
+function escapeHTML(text){
+  return text.replace(/[&<>"']/g, function(char){
     return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
     }[char];
   });
 }
