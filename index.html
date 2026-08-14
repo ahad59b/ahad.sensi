@@ -61,7 +61,7 @@ body{
   margin:20px 0;
 }
 
-button,.download{
+button{
   display:block;
   width:100%;
   border:0;
@@ -72,7 +72,10 @@ button,.download{
   font-size:16px;
   font-weight:bold;
   cursor:pointer;
-  text-decoration:none;
+}
+
+button:disabled{
+  opacity:.6;
 }
 
 .info{
@@ -87,6 +90,14 @@ button,.download{
 .success{
   color:#00c853;
 }
+
+.error{
+  color:#ff5252;
+}
+
+.loading{
+  color:#ffd600;
+}
 </style>
 </head>
 
@@ -94,98 +105,362 @@ button,.download{
 
 <div class="container">
 
-<div class="header">
-Ahad Sensi
-</div>
+  <div class="header">
+    Ahad Sensi
+  </div>
 
-<div class="card" id="card">
+  <div class="card" id="card">
 
-<div class="logo">A</div>
+    <div class="logo">A</div>
 
-<h1>Ahad Sensi</h1>
+    <h1>Ahad Sensi</h1>
 
-<div class="description">
-Premium APK
-</div>
+    <div class="description">
+      Premium APK
+    </div>
 
-<div class="price">
-৳15
-</div>
+    <div class="price">
+      ৳15
+    </div>
 
-<button onclick="payNow()">
-Pay ৳15 with RupantorPay
-</button>
+    <button id="payButton" onclick="startPayment()">
+      Pay ৳15 with RupantorPay
+    </button>
 
-<div class="info">
-Payment করার পর সফল হলে automatic download হবে।
-</div>
+    <div class="info">
+      Payment করার পর automatically verify হবে।
+    </div>
 
-</div>
+  </div>
 
 </div>
 
 <script>
-// ১. রুপান্তর পে-এর পেমেন্ট লিঙ্ক
-const PAYMENT_LINK = "https://rupantorpay.com/paymentlink/eyJ1aWQiOjYyNjcsImJyYW5kX2lkIjoiMzg5OSIsImN1c3RvbWVyX2Ftb3VudCI6IjE1In0";
 
-// ২. ডাউনলোডের মিডিয়া ফায়ার লিঙ্ক
-const APK_LINK = "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
+/* ================================
+   PHP URL
+================================ */
 
-// পেমেন্ট বাটনে চাপ দিলে রূপান্তর পে-তে নিয়ে যাবে
-function payNow(){
-  window.location.href = PAYMENT_LINK;
+const CHECKOUT_API =
+  "https://sensi.xo.je/checkout.php";
+
+const VERIFY_API =
+  "https://sensi.xo.je/verify.php";
+
+
+/* ================================
+   APK DOWNLOAD LINK
+================================ */
+
+const APK_LINK =
+  "https://www.mediafire.com/file/nbn4ms5bvkp5cf2/ahad.sensi_v1.apk/file";
+
+
+/* ================================
+   PAYMENT START
+================================ */
+
+async function startPayment(){
+
+  const button =
+    document.getElementById("payButton");
+
+  button.disabled = true;
+
+  button.innerText =
+    "Creating Payment...";
+
+  try{
+
+    const response =
+      await fetch(
+        CHECKOUT_API + "?t=" + Date.now(),
+        {
+          method:"GET",
+          cache:"no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    console.log("Checkout:", data);
+
+    if(
+      data.ok === true &&
+      data.payment_url
+    ){
+
+      window.location.href =
+        data.payment_url;
+
+      return;
+    }
+
+    throw new Error(
+      data.message ||
+      "Payment link তৈরি হয়নি"
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    alert(
+      "Payment শুরু করা যায়নি। আবার চেষ্টা করুন।"
+    );
+
+    button.disabled = false;
+
+    button.innerText =
+      "Pay ৳15 with RupantorPay";
+  }
+
 }
 
-// RupantorPay থেকে পেমেন্ট শেষে ফেরত এলে ডাউনলোড শুরু হবে
-window.addEventListener("DOMContentLoaded", function(){
-  const params = new URLSearchParams(window.location.search);
-  
-  const transactionId = params.get("transactionId") || params.get("transaction_id") || params.get("trx_id");
-  const status = (params.get("status") || "").toLowerCase();
 
-  // পেমেন্ট সফল হলে
-  if (status === "completed" || status === "success" || transactionId) {
-    document.getElementById("card").innerHTML = `
-      <div class="logo" style="background:#00c853">✓</div>
-      <h1 class="success">Payment Successful!</h1>
-      <div class="description">
-        ${transactionId ? `Transaction ID: <br><b>${escapeHTML(transactionId)}</b><br><br>` : ''}
-        পেমেন্ট সফল হয়েছে।<br>
-        ২ সেকেন্ড পর Download শুরু হচ্ছে...
-      </div>
-    `;
+/* ================================
+   VERIFY PAYMENT
+================================ */
 
-    // ২ সেকেন্ড পর মিডিয়াফায়ার লিংকে নিয়ে যাবে
-    setTimeout(function(){
-      window.location.href = APK_LINK;
-    }, 2000);
-  } 
-  // পেমেন্ট ক্যানসেল বা ফেইল হলে
-  else if (status === "failed" || status === "cancelled") {
-    document.getElementById("card").innerHTML = `
-      <div class="logo" style="background:#ff3b30">✕</div>
-      <h1 style="color:#ff3b30">Payment Failed!</h1>
-      <div class="description">
-        আপনার পেমেন্টটি সম্পন্ন হয়নি। দয়া করে আবার চেষ্টা করুন।
+async function verifyPayment(transactionId){
+
+  const card =
+    document.getElementById("card");
+
+  card.innerHTML = `
+
+    <div class="logo loading">
+      ...
+    </div>
+
+    <h1 class="loading">
+      Checking Payment...
+    </h1>
+
+    <div class="description">
+      Payment verification চলছে...
+      <br><br>
+      একটু অপেক্ষা করুন।
+    </div>
+
+  `;
+
+  try{
+
+    const url =
+      VERIFY_API +
+      "?transaction_id=" +
+      encodeURIComponent(transactionId) +
+      "&t=" +
+      Date.now();
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:"GET",
+          cache:"no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    console.log("Verify:", data);
+
+
+    /* ================================
+       ONLY VERIFIED PAYMENT
+    ================================= */
+
+    if(
+      data.ok === true &&
+      data.verified === true &&
+      String(data.status).toUpperCase() === "COMPLETED"
+    ){
+
+      card.innerHTML = `
+
+        <div
+          class="logo"
+          style="background:#00c853"
+        >
+          ✓
+        </div>
+
+        <h1 class="success">
+          Payment Successful!
+        </h1>
+
+        <div class="description">
+
+          Payment successfully verified.
+
+          <br><br>
+
+          Transaction ID:
+
+          <br>
+
+          <b>
+            ${escapeHTML(transactionId)}
+          </b>
+
+          <br><br>
+
+          ২ সেকেন্ড পর Download শুরু হবে...
+
+        </div>
+
+      `;
+
+      setTimeout(function(){
+
+        window.location.href =
+          APK_LINK;
+
+      },2000);
+
+      return;
+    }
+
+
+    /* ================================
+       NOT VERIFIED
+    ================================= */
+
+    card.innerHTML = `
+
+      <div
+        class="logo"
+        style="background:#ff3b30"
+      >
+        ✕
       </div>
+
+      <h1 class="error">
+        Payment Not Verified
+      </h1>
+
+      <div class="description">
+
+        Payment এখনো verify হয়নি।
+
+        <br><br>
+
+        Transaction ID:
+
+        <br>
+
+        <b>
+          ${escapeHTML(transactionId)}
+        </b>
+
+      </div>
+
       <br>
-      <button onclick="window.location.href=window.location.pathname">আবার চেষ্টা করুন</button>
+
+      <button onclick="location.href=location.pathname">
+        আবার চেষ্টা করুন
+      </button>
+
     `;
+
+  }catch(error){
+
+    console.error(error);
+
+    card.innerHTML = `
+
+      <div
+        class="logo"
+        style="background:#ff3b30"
+      >
+        !
+      </div>
+
+      <h1 class="error">
+        Verification Error
+      </h1>
+
+      <div class="description">
+        Verification server-এর সাথে
+        যোগাযোগ করা যায়নি।
+      </div>
+
+      <br>
+
+      <button onclick="location.reload()">
+        আবার চেষ্টা করুন
+      </button>
+
+    `;
+
   }
-});
+
+}
+
+
+/* ================================
+   PAYMENT CALLBACK
+================================ */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  function(){
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+
+    const transactionId =
+      params.get("transactionId") ||
+      params.get("transaction_id") ||
+      params.get("trx_id");
+
+
+    if(transactionId){
+
+      /*
+       * Payment callback পেয়েছি।
+       * এখন server-side verification হবে।
+       */
+
+      verifyPayment(transactionId);
+
+    }
+
+  }
+);
+
+
+/* ================================
+   HTML ESCAPE
+================================ */
 
 function escapeHTML(text){
-  return text.replace(/[&<>"']/g, function(char){
-    return {
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#039;"
-    }[char];
-  });
+
+  return String(text).replace(
+    /[&<>"']/g,
+    function(char){
+
+      return {
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+      }[char];
+
+    }
+  );
+
 }
+
 </script>
 
 </body>
-</html>
+  </html>
